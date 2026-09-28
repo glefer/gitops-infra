@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ksops-plugin
+  namespace: argocd
+data:
+  plugin.yaml: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: ConfigManagementPlugin
+    metadata:
+      name: ksops
+    spec:
+      version: v1
+      discover:
+        find:
+          command:
+            - sh
+            - -c
+            - |
+              find . -name 'secret-generator.yaml' -print -quit
+      generate:
+        command:
+          - sh
+          - -c
+          - |
+            set -eu
+            kustomize build \
+              --enable-alpha-plugins \
+              --enable-exec \
+              .

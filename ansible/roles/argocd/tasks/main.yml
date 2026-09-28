@@ -19,3 +19,6 @@
   delegate_to: localhost
   become: false
   run_once: true
+
+- name: Configure KSOPS
+  ansible.builtin.include_tasks: ksops.yml

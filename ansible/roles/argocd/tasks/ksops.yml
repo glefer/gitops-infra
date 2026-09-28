@@ -1,0 +1,102 @@
+- name: Create KSOPS CMP configuration
+  kubernetes.core.k8s:
+    kubeconfig: "{{ lookup('ansible.builtin.env', 'HOME') }}/.kube/cachelab-platform.yaml"
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: ksops-plugin
+        namespace: argocd
+      data:
+        plugin.yaml: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: ConfigManagementPlugin
+          metadata:
+            name: ksops
+          spec:
+            version: v1
+            discover:
+              find:
+                command:
+                  - sh
+                  - -c
+                  - find . -name 'secret-generator.yaml' -print -quit
+            generate:
+              command:
+                - sh
+                - -c
+                - |
+                  set -eu
+                  kustomize build \
+                    --enable-alpha-plugins \
+                    --enable-exec \
+                    .
+  delegate_to: localhost
+  become: false
+
+- name: Add KSOPS sidecar to Argo CD repo-server
+  kubernetes.core.k8s:
+    kubeconfig: "{{ lookup('ansible.builtin.env', 'HOME') }}/.kube/cachelab-platform.yaml"
+    state: patched
+    kind: Deployment
+    api_version: apps/v1
+    name: argocd-repo-server
+    namespace: argocd
+    definition:
+      spec:
+        template:
+          spec:
+            containers:
+              - name: ksops
+                image: viaductoss/ksops:v4.5.1
+                command:
+                  - /var/run/argocd/argocd-cmp-server
+
+                env:
+                  - name: SOPS_AGE_KEY_FILE
+                    value: /home/argocd/.config/sops/age/keys.txt
+
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 999
+                  allowPrivilegeEscalation: false
+                  readOnlyRootFilesystem: true
+                  capabilities:
+                    drop:
+                      - ALL
+                  seccompProfile:
+                    type: RuntimeDefault
+
+                volumeMounts:
+                  - name: var-files
+                    mountPath: /var/run/argocd
+
+                  - name: plugins
+                    mountPath: /home/argocd/cmp-server/plugins
+
+                  - name: ksops-plugin
+                    mountPath: /home/argocd/cmp-server/config/plugin.yaml
+                    subPath: plugin.yaml
+                    readOnly: true
+
+                  - name: sops-age
+                    mountPath: /home/argocd/.config/sops/age
+                    readOnly: true
+
+                  - name: ksops-tmp
+                    mountPath: /tmp
+
+            volumes:
+              - name: ksops-plugin
+                configMap:
+                  name: ksops-plugin
+
+              - name: sops-age
+                secret:
+                  secretName: sops-age
+
+              - name: ksops-tmp
+                emptyDir: {}
+  delegate_to: localhost
+  become: false

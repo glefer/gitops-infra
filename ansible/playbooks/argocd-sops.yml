@@ -1,0 +1,30 @@
+---
+- name: Configure Argo CD SOPS key
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    kubeconfig_path: "{{ lookup('ansible.builtin.env', 'HOME') }}/.kube/cachelab-platform.yaml"
+    age_key_path: "{{ lookup('ansible.builtin.env', 'HOME') }}/.config/sops/age/cachelab-gitops.agekey"
+
+  tasks:
+    - name: Read local age private key
+      ansible.builtin.slurp:
+        src: "{{ age_key_path }}"
+      register: age_private_key
+      no_log: true
+
+    - name: Create SOPS age secret
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: sops-age
+            namespace: argocd
+          type: Opaque
+          stringData:
+            keys.txt: "{{ age_private_key.content | b64decode }}"
+      no_log: true

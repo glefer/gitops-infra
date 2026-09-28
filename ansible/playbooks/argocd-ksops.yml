@@ -1,0 +1,43 @@
+---
+- name: Configure Argo CD KSOPS plugin
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    kubeconfig_path: "{{ lookup('ansible.builtin.env', 'HOME') }}/.kube/cachelab-platform.yaml"
+
+  tasks:
+    - name: Create KSOPS plugin configuration
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: ksops-plugin
+            namespace: argocd
+          data:
+            plugin.yaml: |
+              apiVersion: argoproj.io/v1alpha1
+              kind: ConfigManagementPlugin
+              metadata:
+                name: ksops
+              spec:
+                version: v1
+                discover:
+                  find:
+                    command:
+                      - sh
+                      - -c
+                      - find . -name 'secret-generator.yaml' -print -quit
+                generate:
+                  command:
+                    - sh
+                    - -c
+                    - |
+                      set -eu
+                      kustomize build \
+                        --enable-alpha-plugins \
+                        --enable-exec \
+                        .

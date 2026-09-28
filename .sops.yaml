@@ -1,0 +1,4 @@
+creation_rules:
+  - path_regex: gitops/.*\.enc\.ya?ml$
+    encrypted_regex: '^(data|stringData)$'
+    age: age1pr2ytwrcjmvydzhxazn4hhch328rag0dtzm789exd2qa440tyyvs4zupkl
