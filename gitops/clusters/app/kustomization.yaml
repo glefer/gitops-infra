@@ -5,3 +5,4 @@ resources:
   - traefik.yaml
   - cert-manager.yaml
   - cert-manager-config.yaml
+  - cachelab-staging.yaml

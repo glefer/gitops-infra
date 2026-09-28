@@ -6,4 +6,8 @@ namespace: cachelab-staging
 resources:
   - ../../base
   - ingress.yaml
+  - middleware-auth.yaml
   - middleware-noindex.yaml
+
+generators:
+  - secret-generator.yaml

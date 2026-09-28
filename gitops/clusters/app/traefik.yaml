@@ -22,9 +22,15 @@ spec:
           web:
             expose:
               default: true
+
           websecure:
             expose:
               default: true
+
+        additionalArguments:
+          - --entryPoints.web.http.redirections.entryPoint.to=websecure
+          - --entryPoints.web.http.redirections.entryPoint.scheme=https
+          - --entryPoints.web.http.redirections.entryPoint.permanent=true
 
   destination:
     server: https://kubernetes.default.svc

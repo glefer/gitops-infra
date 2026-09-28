@@ -20,7 +20,7 @@ spec:
 
       containers:
         - name: frontend
-          image: ghcr.io/glefer/cachelab-frontend@sha256:50545480da9f105e58ac229b590fd68dffedfc7b7ed7dc865e379d879f556ddf
+          image: ghcr.io/glefer/cachelab-frontend@sha256:981d4c77646d3b0afcd113d632f442a84e28038680788812197f45e2d31c1658
 
           ports:
             - name: http

@@ -11,20 +11,15 @@ data:
       name: ksops
     spec:
       version: v1
+
       discover:
-        find:
-          command:
-            - sh
-            - -c
-            - |
-              find . -name 'secret-generator.yaml' -print -quit
+        fileName: "secret-generator.yaml"
+
       generate:
         command:
-          - sh
-          - -c
-          - |
-            set -eu
-            kustomize build \
-              --enable-alpha-plugins \
-              --enable-exec \
-              .
+          - kustomize
+        args:
+          - build
+          - --enable-alpha-plugins
+          - --enable-exec
+          - .
