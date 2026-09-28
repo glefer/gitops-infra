@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+
+spec:
+  ingressClassName: traefik
+
+  tls:
+    - hosts:
+        - smoke.cachelab.fr
+      secretName: smoke-cachelab-fr-tls
+
+  rules:
+    - host: smoke.cachelab.fr
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx
+                port:
+                  number: 80
