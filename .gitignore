@@ -6,6 +6,7 @@
 *.tfvars
 *.tfvars.json
 !*.tfvars.example
+!*.auto.tfvars
 
 .env
 .env.*
