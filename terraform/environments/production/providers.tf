@@ -1,3 +1,1 @@
-provider "ovh" {
-  endpoint = "ovh-eu"
-}
+provider "ovh" {}
