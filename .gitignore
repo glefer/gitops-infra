@@ -1,0 +1,17 @@
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+.env
+.env.*
+*.pem
+*.key
+
+.idea/
+.vscode/
+.DS_Store
