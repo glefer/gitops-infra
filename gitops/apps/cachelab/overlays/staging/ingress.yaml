@@ -1,0 +1,30 @@
+# gitops/apps/cachelab/overlays/staging/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cachelab
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+    traefik.ingress.kubernetes.io/router.middlewares: >-
+      cachelab-staging-staging-basic-auth@kubernetescrd,
+      cachelab-staging-staging-noindex@kubernetescrd
+
+spec:
+  ingressClassName: traefik
+
+  tls:
+    - hosts:
+        - staging.cachelab.fr
+      secretName: staging-cachelab-fr-tls
+
+  rules:
+    - host: staging.cachelab.fr
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cachelab
+                port:
+                  number: 80

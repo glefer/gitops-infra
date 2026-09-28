@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: cachelab-staging
+
+resources:
+  - ../../base
+  - ingress.yaml
+  - middleware-noindex.yaml
