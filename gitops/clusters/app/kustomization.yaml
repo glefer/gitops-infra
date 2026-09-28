@@ -4,4 +4,4 @@ kind: Kustomization
 resources:
   - traefik.yaml
   - cert-manager.yaml
-  - smoke-test.yaml
+  - cert-manager-config.yaml

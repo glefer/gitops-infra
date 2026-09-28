@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: smoke-test
+  name: cert-manager-config
   namespace: argocd
 spec:
   project: default
@@ -9,16 +9,13 @@ spec:
   source:
     repoURL: https://github.com/glefer/gitops-infra.git
     targetRevision: main
-    path: gitops/apps/smoke-test
+    path: gitops/platform/cert-manager
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: smoke-test
+    namespace: cert-manager
 
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-
-    syncOptions:
-      - CreateNamespace=true
