@@ -1,0 +1,10 @@
+---
+- name: Configure observability server
+  hosts: observability
+  become: true
+
+  roles:
+    - common
+    - hardening
+    - firewall
+    - docker

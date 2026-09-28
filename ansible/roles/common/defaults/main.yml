@@ -1,0 +1,11 @@
+common_timezone: UTC
+
+common_packages:
+  - ca-certificates
+  - curl
+  - git
+  - gnupg
+  - htop
+  - jq
+  - unzip
+  - vim

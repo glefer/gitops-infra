@@ -1,0 +1,21 @@
+---
+- name: Ensure Argo CD namespace exists
+  kubernetes.core.k8s:
+    kubeconfig: "{{ lookup('ansible.builtin.env', 'HOME') }}/.kube/cachelab-platform.yaml"
+    api_version: v1
+    kind: Namespace
+    name: argocd
+    state: present
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Install Argo CD
+  kubernetes.core.k8s:
+    kubeconfig: "{{ lookup('ansible.builtin.env', 'HOME') }}/.kube/cachelab-platform.yaml"
+    namespace: argocd
+    state: present
+    src: "https://raw.githubusercontent.com/argoproj/argo-cd/{{ argocd_version }}/manifests/install.yaml"
+  delegate_to: localhost
+  become: false
+  run_once: true

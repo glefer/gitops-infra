@@ -1,0 +1,11 @@
+---
+hardening_admin_user: grayhost
+hardening_admin_groups:
+  - sudo
+
+hardening_admin_shell: /bin/bash
+hardening_admin_public_key: ""
+
+hardening_ssh_password_authentication: false
+hardening_ssh_root_login: false
+hardening_ssh_kbd_interactive_authentication: false

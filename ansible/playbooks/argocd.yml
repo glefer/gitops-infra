@@ -1,0 +1,7 @@
+---
+- name: Bootstrap Argo CD
+  hosts: app
+  gather_facts: false
+
+  roles:
+    - argocd
