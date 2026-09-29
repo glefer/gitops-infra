@@ -1,0 +1,7 @@
+{{ loki_internal_hostname }} {
+    basic_auth {
+        {{ loki_basic_auth_username }} {{ loki_basic_auth_hash.stdout }}
+    }
+
+    reverse_proxy loki:3100
+}

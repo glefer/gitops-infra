@@ -1,0 +1,21 @@
+---
+- name: Restart Grafana
+  community.docker.docker_compose_v2:
+    project_src: "{{ observability_root }}"
+    services:
+      - grafana
+    state: restarted
+
+- name: Restart Loki
+  community.docker.docker_compose_v2:
+    project_src: "{{ observability_root }}"
+    services:
+      - loki
+    state: restarted
+
+- name: Restart Caddy
+  community.docker.docker_compose_v2:
+    project_src: "{{ observability_root }}"
+    services:
+      - caddy
+    state: restarted

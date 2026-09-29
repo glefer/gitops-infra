@@ -17,6 +17,8 @@ spec:
 
         service:
           type: LoadBalancer
+          spec:
+            externalTrafficPolicy: Local
 
         ports:
           web:
@@ -32,6 +34,12 @@ spec:
           - --entryPoints.web.http.redirections.entryPoint.scheme=https
           - --entryPoints.web.http.redirections.entryPoint.permanent=true
           - --accesslog=true
+          - --accesslog.format=json
+          - --accesslog.fields.headers.defaultmode=drop
+          - --accesslog.fields.headers.names.X-Forwarded-For=keep
+          - --accesslog.fields.headers.names.X-Real-Ip=keep
+          - --accesslog.fields.headers.names.User-Agent=keep
+          - --accesslog.fields.headers.names.Referer=keep
 
   destination:
     server: https://kubernetes.default.svc

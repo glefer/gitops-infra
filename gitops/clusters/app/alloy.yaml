@@ -1,0 +1,117 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: alloy
+  namespace: argocd
+
+spec:
+  project: default
+
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: alloy
+      targetRevision: 1.13.0
+
+      helm:
+        values: |
+          controller:
+            type: deployment
+            replicas: 1
+
+          alloy:
+            envFrom:
+              - secretRef:
+                  name: alloy-loki-credentials
+
+            configMap:
+              content: |-
+                discovery.kubernetes "pods" {
+                  role = "pod"
+                }
+
+                discovery.relabel "pods" {
+                  targets = discovery.kubernetes.pods.targets
+
+                  rule {
+                    source_labels = ["__meta_kubernetes_namespace"]
+                    target_label  = "namespace"
+                  }
+
+                  rule {
+                    source_labels = ["__meta_kubernetes_pod_container_name"]
+                    target_label  = "container"
+                  }
+
+                  rule {
+                    source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                    target_label  = "application"
+                  }
+
+                  rule {
+                    source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_component"]
+                    target_label  = "component"
+                  }
+
+                  rule {
+                    target_label = "cluster"
+                    replacement  = "platform-app-01"
+                  }
+
+                  rule {
+                    source_labels = ["__meta_kubernetes_pod_label_observability_cachelab_fr_environment"]
+                    target_label  = "environment"
+                  }
+                }
+
+                loki.source.kubernetes "pods" {
+                  targets    = discovery.relabel.pods.output
+                  forward_to = [loki.relabel.pods.receiver]
+                }
+
+                loki.relabel "pods" {
+                  forward_to = [loki.write.default.receiver]
+
+                  rule {
+                    action = "labeldrop"
+                    regex  = "^(instance|job)$"
+                  }
+                }
+
+                loki.write "default" {
+                  endpoint {
+                    url = "https://loki-internal.glefer.fr/loki/api/v1/push"
+
+                    basic_auth {
+                      username = sys.env("LOKI_USERNAME")
+                      password = sys.env("LOKI_PASSWORD")
+                    }
+                  }
+                }
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+
+            limits:
+              cpu: 250m
+              memory: 256Mi
+
+    - repoURL: https://github.com/glefer/gitops-infra.git
+      targetRevision: main
+      path: gitops/platform/alloy
+
+      plugin:
+        name: ksops-v1
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: alloy
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+    syncOptions:
+      - CreateNamespace=true

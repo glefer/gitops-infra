@@ -1,3 +1,4 @@
+---
 - name: Create observability directories
   ansible.builtin.file:
     path: "{{ item }}"
@@ -8,17 +9,34 @@
   loop:
     - "{{ observability_root }}"
     - "{{ observability_root }}/prometheus"
+    - "{{ observability_root }}/prometheus/secrets"
     - "{{ observability_root }}/grafana"
     - "{{ observability_root }}/grafana/provisioning"
     - "{{ observability_root }}/grafana/provisioning/datasources"
+    - "{{ observability_root }}/loki"
+    - "{{ observability_root }}/caddy"
 
-- name: Render Docker Compose
+- name: Inspect kube-state-metrics password path
+  ansible.builtin.stat:
+    path: "{{ observability_root }}/prometheus/secrets/kube-state-metrics-password"
+  register: kube_state_metrics_password_path
+
+- name: Remove invalid kube-state-metrics password directory
+  ansible.builtin.file:
+    path: "{{ observability_root }}/prometheus/secrets/kube-state-metrics-password"
+    state: absent
+  when:
+    - kube_state_metrics_password_path.stat.exists
+    - kube_state_metrics_password_path.stat.isdir
+
+- name: Render kube-state-metrics password
   ansible.builtin.template:
-    src: compose.yaml.j2
-    dest: "{{ observability_root }}/compose.yaml"
-    owner: root
-    group: root
-    mode: "0644"
+    src: kube-state-metrics-password.j2
+    dest: "{{ observability_root }}/prometheus/secrets/kube-state-metrics-password"
+    owner: "65534"
+    group: "65534"
+    mode: "0400"
+  no_log: true
 
 - name: Render Prometheus configuration
   ansible.builtin.template:
@@ -28,10 +46,62 @@
     group: root
     mode: "0644"
 
-- name: Render Grafana datasource
+- name: Render Loki configuration
+  ansible.builtin.template:
+    src: loki-config.yml.j2
+    dest: "{{ observability_root }}/loki/loki-config.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Loki
+
+- name: Generate Caddy password hash for Loki
+  ansible.builtin.command:
+    argv:
+      - docker
+      - run
+      - --rm
+      - "{{ caddy_image }}"
+      - caddy
+      - hash-password
+      - --plaintext
+      - "{{ loki_basic_auth_password }}"
+  register: loki_basic_auth_hash
+  changed_when: false
+  no_log: true
+
+- name: Render Caddy configuration
+  ansible.builtin.template:
+    src: Caddyfile.j2
+    dest: "{{ observability_root }}/caddy/Caddyfile"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Caddy
+
+- name: Render Grafana Prometheus datasource
   ansible.builtin.template:
     src: grafana-prometheus-datasource.yml.j2
     dest: "{{ observability_root }}/grafana/provisioning/datasources/prometheus.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Grafana
+
+
+- name: Render Grafana Loki datasource
+  ansible.builtin.template:
+    src: grafana-loki-datasource.yml.j2
+    dest: "{{ observability_root }}/grafana/provisioning/datasources/loki.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Grafana
+
+- name: Render Docker Compose
+  ansible.builtin.template:
+    src: compose.yaml.j2
+    dest: "{{ observability_root }}/compose.yaml"
     owner: root
     group: root
     mode: "0644"
@@ -41,20 +111,3 @@
     project_src: "{{ observability_root }}"
     state: present
     pull: missing
-
-- name: Create Prometheus secrets directory
-  ansible.builtin.file:
-    path: "{{ observability_root }}/prometheus/secrets"
-    state: directory
-    owner: root
-    group: root
-    mode: "0700"
-
-- name: Render kube-state-metrics password
-  ansible.builtin.template:
-    src: kube-state-metrics-password.j2
-    dest: "{{ observability_root }}/prometheus/secrets/kube-state-metrics-password"
-    owner: root
-    group: root
-    mode: "0600"
-  no_log: true

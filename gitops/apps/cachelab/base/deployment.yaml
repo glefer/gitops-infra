@@ -2,6 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cachelab
+  labels:
+    app.kubernetes.io/name: cachelab
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: cachelab
+
 spec:
   replicas: 1
 
@@ -13,6 +18,9 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: cachelab
+        app.kubernetes.io/component: frontend
+        app.kubernetes.io/part-of: cachelab
+        observability.cachelab.fr/environment: staging
 
     spec:
       imagePullSecrets:
@@ -20,7 +28,7 @@ spec:
 
       containers:
         - name: frontend
-          image: ghcr.io/glefer/cachelab-frontend@sha256:981d4c77646d3b0afcd113d632f442a84e28038680788812197f45e2d31c1658
+          image: ghcr.io/glefer/cachelab-frontend@sha256:34fc6cebad9c8817773441805f56eb7e5ef79d1258cf532b9893308fa7c21020
 
           ports:
             - name: http

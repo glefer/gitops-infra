@@ -8,9 +8,21 @@ services:
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.time=15d
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./prometheus/secrets/kube-state-metrics-password:/etc/prometheus/secrets/kube-state-metrics-password:ro
-      - prometheus-data:/prometheus
+      - type: bind
+        source: ./prometheus/prometheus.yml
+        target: /etc/prometheus/prometheus.yml
+        read_only: true
+
+      - type: bind
+        source: ./prometheus/secrets/kube-state-metrics-password
+        target: /etc/prometheus/secrets/kube-state-metrics-password
+        read_only: true
+        bind:
+          create_host_path: false
+
+      - type: volume
+        source: prometheus-data
+        target: /prometheus
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -33,10 +45,40 @@ services:
     networks:
       - observability
 
+  loki:
+    image: {{ loki_image }}
+    container_name: loki
+    restart: unless-stopped
+    command:
+    - -config.file=/etc/loki/config.yml
+    volumes:
+    - ./loki/loki-config.yml:/etc/loki/config.yml:ro
+    - loki-data:/loki
+    networks:
+    - observability
+
+  caddy:
+    image: {{ caddy_image }}
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - loki
+    networks:
+      - observability
+
 volumes:
   prometheus-data:
   grafana-data:
-
+  loki-data:
+  caddy-data:
+  caddy-config:
 networks:
   observability:
     driver: bridge

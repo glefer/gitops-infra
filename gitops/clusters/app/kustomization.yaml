@@ -8,3 +8,4 @@ resources:
   - cachelab-staging.yaml
   - kube-state-metrics.yaml
   - kube-state-metrics-config.yaml
+  - alloy.yaml

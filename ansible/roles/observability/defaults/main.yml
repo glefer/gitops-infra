@@ -2,3 +2,5 @@ observability_root: /opt/platform/observability
 
 prometheus_image: prom/prometheus:v3.6.0
 grafana_image: grafana/grafana:12.1.1
+loki_image: grafana/loki:3.5.3
+caddy_image: caddy:2.10.2
