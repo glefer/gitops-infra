@@ -1,0 +1,43 @@
+- name: Create observability directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ observability_root }}"
+    - "{{ observability_root }}/prometheus"
+    - "{{ observability_root }}/grafana"
+    - "{{ observability_root }}/grafana/provisioning"
+    - "{{ observability_root }}/grafana/provisioning/datasources"
+
+- name: Render Docker Compose
+  ansible.builtin.template:
+    src: compose.yaml.j2
+    dest: "{{ observability_root }}/compose.yaml"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Render Prometheus configuration
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ observability_root }}/prometheus/prometheus.yml"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Render Grafana datasource
+  ansible.builtin.template:
+    src: grafana-prometheus-datasource.yml.j2
+    dest: "{{ observability_root }}/grafana/provisioning/datasources/prometheus.yml"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start observability stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ observability_root }}"
+    state: present
+    pull: missing

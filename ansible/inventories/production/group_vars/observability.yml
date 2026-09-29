@@ -1,3 +1,7 @@
 ---
 firewall_allowed_tcp_ports:
   - 22
+
+firewall_allowed_tcp_source_rules:
+  - port: "9100"
+    source: "172.30.0.0/24"

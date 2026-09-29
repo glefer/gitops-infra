@@ -8,6 +8,11 @@
     update_cache: true
     cache_valid_time: 3600
 
+- name: Check if k3s is already installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/k3s
+  register: k3s_binary
+  
 - name: Download k3s install script
   ansible.builtin.get_url:
     url: https://get.k3s.io
@@ -15,6 +20,11 @@
     owner: root
     group: root
     mode: "0755"
+  register: k3s_download
+  retries: 3
+  delay: 5
+  until: k3s_download is succeeded
+  when: not k3s_binary.stat.exists
 
 - name: Install k3s
   ansible.builtin.command:
@@ -28,6 +38,7 @@
       {% for component in k3s_disable_components %}
       --disable={{ component }}
       {% endfor %}
+  when: not k3s_binary.stat.exists
 
 - name: Reload systemd
   ansible.builtin.systemd_service:

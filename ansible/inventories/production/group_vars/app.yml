@@ -3,3 +3,7 @@ firewall_allowed_tcp_ports:
   - 22
   - 80
   - 443
+
+firewall_allowed_tcp_source_rules:
+  - port: "9100"
+    source: "135.125.75.36"

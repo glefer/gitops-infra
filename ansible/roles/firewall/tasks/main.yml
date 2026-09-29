@@ -21,6 +21,14 @@
     proto: tcp
   loop: "{{ firewall_allowed_tcp_ports }}"
 
+- name: Allow restricted TCP ports
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: tcp
+    from_ip: "{{ item.source }}"
+  loop: "{{ firewall_allowed_tcp_source_rules }}"
+
 - name: Enable UFW
   community.general.ufw:
     state: enabled

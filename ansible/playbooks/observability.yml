@@ -8,3 +8,11 @@
     - hardening
     - firewall
     - docker
+    - node_exporter
+
+- name: Deploy observability stack
+  hosts: observability
+  become: true
+
+  roles:
+    - observability

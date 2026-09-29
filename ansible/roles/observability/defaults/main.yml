@@ -1,0 +1,4 @@
+observability_root: /opt/platform/observability
+
+prometheus_image: prom/prometheus:v3.6.0
+grafana_image: grafana/grafana:12.1.1

@@ -8,3 +8,4 @@
     - hardening
     - firewall
     - k3s
+    - node_exporter
