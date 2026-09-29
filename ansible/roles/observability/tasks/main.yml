@@ -41,3 +41,20 @@
     project_src: "{{ observability_root }}"
     state: present
     pull: missing
+
+- name: Create Prometheus secrets directory
+  ansible.builtin.file:
+    path: "{{ observability_root }}/prometheus/secrets"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Render kube-state-metrics password
+  ansible.builtin.template:
+    src: kube-state-metrics-password.j2
+    dest: "{{ observability_root }}/prometheus/secrets/kube-state-metrics-password"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true

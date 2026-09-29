@@ -6,3 +6,5 @@ resources:
   - cert-manager.yaml
   - cert-manager-config.yaml
   - cachelab-staging.yaml
+  - kube-state-metrics.yaml
+  - kube-state-metrics-config.yaml

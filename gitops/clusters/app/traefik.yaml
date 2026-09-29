@@ -28,9 +28,10 @@ spec:
               default: true
 
         additionalArguments:
-          - --entryPoints.web.http.redirections.entryPoint.to=websecure
+          - --entryPoints.web.http.redirections.entryPoint.to=:443
           - --entryPoints.web.http.redirections.entryPoint.scheme=https
           - --entryPoints.web.http.redirections.entryPoint.permanent=true
+          - --accesslog=true
 
   destination:
     server: https://kubernetes.default.svc

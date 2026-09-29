@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kube-state-metrics
+  namespace: kube-system
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+    traefik.ingress.kubernetes.io/router.middlewares: kube-system-kube-state-metrics-basic-auth@kubernetescrd
+spec:
+  ingressClassName: traefik
+
+  tls:
+    - hosts:
+        - metrics-internal.glefer.fr
+      secretName: metrics-internal-glefer-fr-tls
+
+  rules:
+    - host: metrics-internal.glefer.fr
+      http:
+        paths:
+          - path: /metrics
+            pathType: Exact
+            backend:
+              service:
+                name: kube-state-metrics
+                port:
+                  number: 8080

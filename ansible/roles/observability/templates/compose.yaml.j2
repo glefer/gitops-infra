@@ -9,6 +9,7 @@ services:
       - --storage.tsdb.retention.time=15d
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/secrets/kube-state-metrics-password:/etc/prometheus/secrets/kube-state-metrics-password:ro
       - prometheus-data:/prometheus
     extra_hosts:
       - "host.docker.internal:host-gateway"

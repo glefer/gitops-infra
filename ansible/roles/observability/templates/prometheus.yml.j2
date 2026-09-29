@@ -19,3 +19,15 @@ scrape_configs:
           - 135.125.75.237:9100
         labels:
           instance: platform-app-01
+
+  - job_name: kube-state-metrics
+    scheme: https
+    metrics_path: /metrics
+
+    basic_auth:
+      username: "{{ kube_state_metrics_username }}"
+      password_file: /etc/prometheus/secrets/kube-state-metrics-password
+
+    static_configs:
+      - targets:
+          - metrics-internal.glefer.fr
