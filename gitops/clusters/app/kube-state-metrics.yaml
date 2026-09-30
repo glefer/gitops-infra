@@ -13,6 +13,9 @@ spec:
     helm:
       values: |
         prometheusScrape: true
+        metricLabelsAllowlist:
+          - pods=[app.kubernetes.io/name,app.kubernetes.io/component,app.kubernetes.io/part-of,observability.cachelab.fr/environment]
+          - deployments=[app.kubernetes.io/name,app.kubernetes.io/component,app.kubernetes.io/part-of]
 
   destination:
     server: https://kubernetes.default.svc
