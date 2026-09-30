@@ -15,6 +15,8 @@
     - "{{ observability_root }}/grafana/provisioning/datasources"
     - "{{ observability_root }}/loki"
     - "{{ observability_root }}/caddy"
+    - "{{ observability_root }}/grafana/provisioning/dashboards"
+    - "{{ observability_root }}/grafana/dashboards"
 
 - name: Inspect kube-state-metrics password path
   ansible.builtin.stat:
@@ -93,6 +95,33 @@
   ansible.builtin.template:
     src: grafana-loki-datasource.yml.j2
     dest: "{{ observability_root }}/grafana/provisioning/datasources/loki.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Grafana
+
+- name: Render Grafana dashboard provider
+  ansible.builtin.template:
+    src: grafana-dashboard-provider.yml.j2
+    dest: "{{ observability_root }}/grafana/provisioning/dashboards/default.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Grafana
+
+- name: Render Application Health dashboard
+  ansible.builtin.template:
+    src: grafana/dashboards/application-health.json.j2
+    dest: "{{ observability_root }}/grafana/dashboards/application-health.json"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Grafana
+
+- name: Render Security Edge dashboard
+  ansible.builtin.template:
+    src: grafana/dashboards/security-edge.json.j2
+    dest: "{{ observability_root }}/grafana/dashboards/security-edge.json"
     owner: root
     group: root
     mode: "0644"

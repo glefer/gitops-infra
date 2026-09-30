@@ -1,0 +1,684 @@
+{
+  "id": null,
+  "uid": "application-health",
+  "title": "Application Health",
+  "tags": [
+    "platform",
+    "application",
+    "observability"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "30s",
+
+  "templating": {
+    "list": [
+      {
+        "name": "environment",
+        "label": "Environment",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values(environment)",
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false
+      },
+      {
+        "name": "application",
+        "label": "Application",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values({environment=\"$environment\"}, application)",
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false
+      },
+      {
+        "name": "component",
+        "label": "Component",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values({environment=\"$environment\",application=\"$application\"}, component)",
+        "refresh": 1,
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true
+      },
+      {
+        "name": "namespace",
+        "label": "Namespace",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values({environment=\"$environment\",application=\"$application\"}, namespace)",
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false
+      }
+    ]
+  },
+
+  "panels": [
+    {
+      "type": "row",
+      "title": "Service health",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+
+    {
+      "type": "stat",
+      "title": "Requests / sec",
+      "description": "Current HTTP request rate for the selected application and component.",
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate({namespace=\"$namespace\",environment=\"$environment\",application=\"$application\",component=~\"$component\"}[1m]))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "0"
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "stat",
+      "title": "5xx error rate",
+      "description": "Percentage of HTTP requests returning a 5xx response during the last 5 minutes.",
+      "gridPos": {
+        "x": 6,
+        "y": 1,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * (sum(rate({namespace=\"$namespace\",environment=\"$environment\",application=\"$application\",component=~\"$component\"} | json | __error__=\"\" | status >= 500 [5m])) / sum(rate({namespace=\"$namespace\",environment=\"$environment\",application=\"$application\",component=~\"$component\"}[5m])))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "stat",
+      "title": "Average latency",
+      "description": "Average Nginx request processing time during the last 5 minutes.",
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "1000 * (sum(sum_over_time({namespace=\"$namespace\",environment=\"$environment\",application=\"$application\",component=~\"$component\"} | json | unwrap request_time | __error__=\"\" [5m])) / sum(count_over_time({namespace=\"$namespace\",environment=\"$environment\",application=\"$application\",component=~\"$component\"} | json | __error__=\"\" [5m])))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 2,
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 200
+              },
+              {
+                "color": "red",
+                "value": 1000
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "stat",
+      "title": "Available replicas",
+      "description": "Available Deployment replicas matching the selected application and component.",
+      "gridPos": {
+        "x": 18,
+        "y": 1,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(kube_deployment_status_replicas_available{namespace=\"$namespace\"} * on(namespace,deployment) group_left() kube_deployment_labels{namespace=\"$namespace\",label_app_kubernetes_io_name=\"$application\",label_app_kubernetes_io_component=~\"$component\"})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "row",
+      "title": "HTTP",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+
+    {
+      "type": "timeseries",
+      "title": "HTTP Requests",
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate({namespace=\"$namespace\",environment=\"$environment\",application=\"$application\",component=~\"$component\"}[1m]))",
+          "legendFormat": "requests"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        }
+      }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "HTTP Errors",
+      "description": "HTTP 4xx and 5xx responses grouped by status code.",
+      "gridPos": {
+        "x": 12,
+        "y": 6,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (status) (rate({namespace=\"$namespace\",environment=\"$environment\",application=\"$application\",component=~\"$component\"} | json | __error__=\"\" | status >= 400 [1m]))",
+          "legendFormat": "HTTP {{ '{{' }} status {{ '}}' }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        }
+      }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Response time",
+      "description": "Average application response time computed from structured access logs.",
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "1000 * (sum(sum_over_time({namespace=\"$namespace\",environment=\"$environment\",application=\"$application\",component=~\"$component\"} | json | unwrap request_time | __error__=\"\" [1m])) / sum(count_over_time({namespace=\"$namespace\",environment=\"$environment\",application=\"$application\",component=~\"$component\"} | json | __error__=\"\" [1m])))",
+          "legendFormat": "average"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 2
+        }
+      }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Deployment replicas",
+      "gridPos": {
+        "x": 12,
+        "y": 14,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "kube_deployment_spec_replicas{namespace=\"$namespace\"} * on(namespace,deployment) group_left() kube_deployment_labels{namespace=\"$namespace\",label_app_kubernetes_io_name=\"$application\",label_app_kubernetes_io_component=~\"$component\"}",
+          "legendFormat": "desired {{ '{{' }} deployment {{ '}}' }}"
+        },
+        {
+          "refId": "B",
+          "expr": "kube_deployment_status_replicas_available{namespace=\"$namespace\"} * on(namespace,deployment) group_left() kube_deployment_labels{namespace=\"$namespace\",label_app_kubernetes_io_name=\"$application\",label_app_kubernetes_io_component=~\"$component\"}",
+          "legendFormat": "available {{ '{{' }} deployment {{ '}}' }}"
+        }
+      ]
+    },
+
+    {
+      "type": "row",
+      "title": "Kubernetes",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+
+    {
+      "type": "stat",
+      "title": "Ready pods",
+      "description": "Pods currently reporting Ready=true.",
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(kube_pod_status_ready{namespace=\"$namespace\",condition=\"true\"} * on(namespace,pod) group_left() kube_pod_labels{namespace=\"$namespace\",label_app_kubernetes_io_name=\"$application\",label_app_kubernetes_io_component=~\"$component\"})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "stat",
+      "title": "Pod restarts",
+      "description": "Container restarts during the currently selected Grafana time range.",
+      "gridPos": {
+        "x": 6,
+        "y": 23,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"$namespace\"}[$__range]) * on(namespace,pod) group_left() kube_pod_labels{namespace=\"$namespace\",label_app_kubernetes_io_name=\"$application\",label_app_kubernetes_io_component=~\"$component\"})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 3
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "stat",
+      "title": "Deployment unavailable",
+      "description": "Deployment replicas currently unavailable.",
+      "gridPos": {
+        "x": 12,
+        "y": 23,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(kube_deployment_status_replicas_unavailable{namespace=\"$namespace\"} * on(namespace,deployment) group_left() kube_deployment_labels{namespace=\"$namespace\",label_app_kubernetes_io_name=\"$application\",label_app_kubernetes_io_component=~\"$component\"})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "stat",
+      "title": "CrashLoopBackOff",
+      "description": "Containers currently waiting in CrashLoopBackOff state.",
+      "gridPos": {
+        "x": 18,
+        "y": 23,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(kube_pod_container_status_waiting_reason{namespace=\"$namespace\",reason=\"CrashLoopBackOff\"} * on(namespace,pod) group_left() kube_pod_labels{namespace=\"$namespace\",label_app_kubernetes_io_name=\"$application\",label_app_kubernetes_io_component=~\"$component\"})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "stat",
+      "title": "OOMKilled",
+      "description": "Containers whose last termination reason was OOMKilled during the selected time range.",
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(max_over_time(kube_pod_container_status_last_terminated_reason{namespace=\"$namespace\",reason=\"OOMKilled\"}[$__range]) * on(namespace,pod) group_left() kube_pod_labels{namespace=\"$namespace\",label_app_kubernetes_io_name=\"$application\",label_app_kubernetes_io_component=~\"$component\"})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "row",
+      "title": "Logs",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+
+    {
+      "type": "logs",
+      "title": "Recent errors",
+      "description": "Recent HTTP 5xx responses and structured warning/error/fatal/panic logs.",
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{namespace=\"$namespace\",environment=\"$environment\",application=\"$application\",component=~\"$component\"} | json | __error__=\"\" | status >= 500"
+        },
+        {
+          "refId": "B",
+          "expr": "{namespace=\"$namespace\",environment=\"$environment\",application=\"$application\",component=~\"$component\"} | json | __error__=\"\" | level=~\"(?i)(warn|error|fatal|panic)\""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending"
+      }
+    },
+
+    {
+      "type": "logs",
+      "title": "Recent logs",
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{namespace=\"$namespace\",environment=\"$environment\",application=\"$application\",component=~\"$component\"}"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending"
+      }
+    }
+  ]
+}

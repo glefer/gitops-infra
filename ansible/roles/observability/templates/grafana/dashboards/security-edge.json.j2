@@ -1,0 +1,965 @@
+{
+  "id": null,
+  "uid": "security-edge",
+  "title": "Security / Edge",
+  "description": "Edge security and HTTP traffic investigation dashboard based on Traefik access logs.",
+  "tags": [
+    "platform",
+    "security",
+    "edge",
+    "traefik"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "30s",
+
+  "templating": {
+    "list": [
+      {
+        "name": "cluster",
+        "label": "Cluster",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values({application=\"traefik\"}, cluster)",
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false
+      },
+      {
+        "name": "host",
+        "label": "Host regex",
+        "type": "textbox",
+        "query": ".*",
+        "current": {
+          "text": ".*",
+          "value": ".*"
+        }
+      },
+      {
+        "name": "ingress_namespace",
+        "label": "Ingress namespace regex",
+        "type": "textbox",
+        "query": ".*",
+        "current": {
+          "text": ".*",
+          "value": ".*"
+        }
+      },
+      {
+        "name": "service",
+        "label": "Service regex",
+        "type": "textbox",
+        "query": ".*",
+        "current": {
+          "text": ".*",
+          "value": ".*"
+        }
+      },
+      {
+        "name": "client_ip",
+        "label": "Client IP regex",
+        "type": "textbox",
+        "query": ".*",
+        "current": {
+          "text": ".*",
+          "value": ".*"
+        }
+      }
+    ]
+  },
+
+  "panels": [
+    {
+      "type": "row",
+      "title": "Overview",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+
+    {
+      "type": "stat",
+      "title": "Requests / sec",
+      "description": "Current request rate through Traefik for the selected filters.",
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" [1m]))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "0"
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "stat",
+      "title": "4xx error rate",
+      "description": "Percentage of requests returning a downstream 4xx response.",
+      "gridPos": {
+        "x": 6,
+        "y": 1,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * (sum(rate({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | DownstreamStatus >= 400 | DownstreamStatus < 500 [5m])) / sum(rate({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" [5m])))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "stat",
+      "title": "5xx error rate",
+      "description": "Percentage of requests returning a downstream 5xx response.",
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * (sum(rate({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | DownstreamStatus >= 500 [5m])) / sum(rate({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" [5m])))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "stat",
+      "title": "Unique external client IPs",
+      "description": "Distinct public client IP addresses observed during the last 5 minutes. RFC1918, loopback, link-local and CGNAT ranges are excluded.",
+      "gridPos": {
+        "x": 18,
+        "y": 1,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count(sum by (ClientHost) (count_over_time({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | ClientHost!~\"^(10\\\\..*|127\\\\..*|169\\\\.254\\\\..*|192\\\\.168\\\\..*|172\\\\.(1[6-9]|2[0-9]|3[01])\\\\..*|100\\\\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\\\\..*)$\" [5m])))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "noValue": "0"
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "row",
+      "title": "Traffic & HTTP status",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Request rate",
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" [1m]))",
+          "legendFormat": "requests"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        }
+      }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "HTTP status",
+      "description": "Request rate grouped by downstream HTTP status.",
+      "gridPos": {
+        "x": 12,
+        "y": 6,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (DownstreamStatus) (rate({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" [1m]))",
+          "legendFormat": "HTTP {{ '{{' }} DownstreamStatus {{ '}}' }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        }
+      }
+    },
+
+    {
+      "type": "row",
+      "title": "Attack signals",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+
+    {
+      "type": "table",
+      "title": "Top external client IPs",
+      "description": "Public clients generating the most requests during the selected time range.",
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "instant",
+          "expr": "topk(20, sum by (ClientHost) (count_over_time({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | ClientHost!~\"^(10\\\\..*|127\\\\..*|169\\\\.254\\\\..*|192\\\\.168\\\\..*|172\\\\.(1[6-9]|2[0-9]|3[01])\\\\..*|100\\\\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\\\\..*)$\" [$__range])))",
+          "legendFormat": "{{ '{{' }} ClientHost {{ '}}' }}"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "ClientHost": "Client IP",
+              "Value": "Requests",
+              "Value #A": "Requests"
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Requests",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+
+    {
+      "type": "table",
+      "title": "Top scanner IPs",
+      "description": "Public clients requesting paths commonly associated with reconnaissance or automated vulnerability scanning.",
+      "gridPos": {
+        "x": 12,
+        "y": 15,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "instant",
+          "expr": "topk(20, sum by (ClientHost) (count_over_time({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | ClientHost!~\"^(10\\\\..*|127\\\\..*|169\\\\.254\\\\..*|192\\\\.168\\\\..*|172\\\\.(1[6-9]|2[0-9]|3[01])\\\\..*|100\\\\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\\\\..*)$\" | RequestPath=~\"(?i).*(\\\\.env|\\\\.git|wp-admin|wp-login|xmlrpc\\\\.php|phpmyadmin|vendor/phpunit|actuator|server-status|cgi-bin|\\\\.aws|\\\\.ssh|config\\\\.php).*\" [$__range])))",
+          "legendFormat": "{{ '{{' }} ClientHost {{ '}}' }}"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "ClientHost": "Client IP",
+              "Value": "Requests",
+              "Value #A": "Requests"
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Requests",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+
+    {
+      "type": "table",
+      "title": "Top 404 paths",
+      "description": "Most requested host/path combinations returning HTTP 404.",
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "instant",
+          "expr": "topk(20, sum by (Target) (count_over_time({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | DownstreamStatus = 404 | label_format Target=\"{{ '{{' }}.RequestHost{{ '}}' }}{{ '{{' }}.RequestPath{{ '}}' }}\" [$__range])))",
+          "legendFormat": "{{ '{{' }} Target {{ '}}' }}"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Target": "Host + Path",
+              "Value": "Requests",
+              "Value #A": "Requests"
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Requests",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+
+    {
+      "type": "table",
+      "title": "Suspicious paths",
+      "description": "Host/path combinations matching common reconnaissance and vulnerability scanning patterns.",
+      "gridPos": {
+        "x": 12,
+        "y": 23,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "instant",
+          "expr": "topk(20, sum by (Target) (count_over_time({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | RequestPath=~\"(?i).*(\\\\.env|\\\\.git|wp-admin|wp-login|xmlrpc\\\\.php|phpmyadmin|vendor/phpunit|actuator|server-status|cgi-bin|\\\\.aws|\\\\.ssh|config\\\\.php).*\" | label_format Target=\"{{ '{{' }}.RequestHost{{ '}}' }}{{ '{{' }}.RequestPath{{ '}}' }}\" [$__range])))",
+          "legendFormat": "{{ '{{' }} Target {{ '}}' }}"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Target": "Host + Path",
+              "Value": "Requests",
+              "Value #A": "Requests"
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Requests",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+
+    {
+      "type": "table",
+      "title": "Unusual HTTP methods",
+      "description": "Methods other than GET, HEAD, POST and OPTIONS.",
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 12,
+        "h": 7
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "instant",
+          "expr": "sum by (RequestMethod) (count_over_time({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | RequestMethod!~\"GET|HEAD|POST|OPTIONS\" [$__range]))",
+          "legendFormat": "{{ '{{' }} RequestMethod {{ '}}' }}"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "RequestMethod": "Method",
+              "Value": "Requests",
+              "Value #A": "Requests"
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Requests",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+
+    {
+      "type": "table",
+      "title": "Top external 4xx client IPs",
+      "description": "Public clients generating the highest number of HTTP 4xx responses.",
+      "gridPos": {
+        "x": 12,
+        "y": 31,
+        "w": 12,
+        "h": 7
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "instant",
+          "expr": "topk(20, sum by (ClientHost) (count_over_time({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | ClientHost!~\"^(10\\\\..*|127\\\\..*|169\\\\.254\\\\..*|192\\\\.168\\\\..*|172\\\\.(1[6-9]|2[0-9]|3[01])\\\\..*|100\\\\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\\\\..*)$\" | DownstreamStatus >= 400 | DownstreamStatus < 500 [$__range])))",
+          "legendFormat": "{{ '{{' }} ClientHost {{ '}}' }}"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "ClientHost": "Client IP",
+              "Value": "Requests",
+              "Value #A": "Requests"
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Requests",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+
+    {
+      "type": "row",
+      "title": "Impact & performance",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 38,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+
+    {
+      "type": "stat",
+      "title": "Average edge latency",
+      "description": "Weighted average Traefik request duration during the last 5 minutes.",
+      "gridPos": {
+        "x": 0,
+        "y": 39,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum(sum_over_time({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | unwrap Duration | __error__=\"\" [5m])) / sum(count_over_time({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" [5m]))) / 1000000"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 2,
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 500
+              },
+              {
+                "color": "red",
+                "value": 2000
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "stat",
+      "title": "Origin 5xx / sec",
+      "description": "5xx errors returned by upstream applications.",
+      "gridPos": {
+        "x": 6,
+        "y": 39,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | OriginStatus >= 500 [5m]))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.01
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "stat",
+      "title": "Slow requests",
+      "description": "Requests taking more than 1 second at the Traefik edge during the selected time range.",
+      "gridPos": {
+        "x": 12,
+        "y": 39,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(count_over_time({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | Duration > 1000000000 [$__range]))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "stat",
+      "title": "TLS < 1.2",
+      "description": "Requests explicitly using TLS 1.0 or TLS 1.1.",
+      "gridPos": {
+        "x": 18,
+        "y": 39,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(count_over_time({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | TLSVersion=~\"1\\\\.[01]\" [$__range]))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Edge latency",
+      "description": "Weighted average Traefik request duration over time.",
+      "gridPos": {
+        "x": 0,
+        "y": 43,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum(sum_over_time({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | unwrap Duration | __error__=\"\" [1m])) / sum(count_over_time({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" [1m]))) / 1000000",
+          "legendFormat": "average"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 2
+        }
+      }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Origin vs downstream 5xx",
+      "gridPos": {
+        "x": 12,
+        "y": 43,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | OriginStatus >= 500 [1m]))",
+          "legendFormat": "origin 5xx"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate({application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | DownstreamStatus >= 500 [1m]))",
+          "legendFormat": "downstream 5xx"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        }
+      }
+    },
+
+    {
+      "type": "row",
+      "title": "Investigation",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 51,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+
+    {
+      "type": "logs",
+      "title": "Suspicious requests",
+      "description": "Raw Traefik logs matching reconnaissance paths or unusual HTTP methods.",
+      "gridPos": {
+        "x": 0,
+        "y": 52,
+        "w": 24,
+        "h": 9
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | RequestPath=~\"(?i).*(\\\\.env|\\\\.git|wp-admin|wp-login|xmlrpc\\\\.php|phpmyadmin|vendor/phpunit|actuator|server-status|cgi-bin|\\\\.aws|\\\\.ssh|config\\\\.php).*\""
+        },
+        {
+          "refId": "B",
+          "expr": "{application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | RequestMethod!~\"GET|HEAD|POST|OPTIONS\""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending"
+      }
+    },
+
+    {
+      "type": "logs",
+      "title": "Recent 4xx / 5xx",
+      "description": "Recent requests returning client or server HTTP errors.",
+      "gridPos": {
+        "x": 0,
+        "y": 61,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{application=\"traefik\",cluster=\"$cluster\"} | json | RequestHost=~\"$host\" | KubernetesIngressNamespace=~\"$ingress_namespace\" | KubernetesServiceName=~\"$service\" | ClientHost=~\"$client_ip\" | DownstreamStatus >= 400"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending"
+      }
+    }
+  ]
+}
