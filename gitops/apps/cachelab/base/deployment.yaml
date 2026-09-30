@@ -1,5 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
+
 metadata:
   name: cachelab
   labels:
@@ -28,11 +29,18 @@ spec:
 
       containers:
         - name: frontend
-          image: ghcr.io/glefer/cachelab-frontend@sha256:34fc6cebad9c8817773441805f56eb7e5ef79d1258cf532b9893308fa7c21020
+          image: ghcr.io/glefer/cachelab-frontend@sha256:f5168b317e8d0e7a38152c236c1749559bda0898b150131cb7f663557e374c44
 
           ports:
             - name: http
               containerPort: 8080
+
+          env:
+            - name: UMAMI_SCRIPT_URL
+              value: "https://analytics.glefer.fr/script.js"
+
+            - name: UMAMI_WEBSITE_ID
+              value: "e7ee081a-0a9e-4efc-ba92-ccbf550ea93a"
 
           readinessProbe:
             httpGet:

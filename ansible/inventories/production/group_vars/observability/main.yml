@@ -9,3 +9,11 @@ firewall_allowed_tcp_source_rules:
     source: "172.30.0.0/24"
 
 loki_internal_hostname: loki-internal.glefer.fr
+
+analytics_hostname: analytics.glefer.fr
+
+umami_image: ghcr.io/umami-software/umami:3.4.0
+postgres_image: postgres:15-alpine
+
+umami_db_name: umami
+umami_db_user: umami

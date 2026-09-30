@@ -4,3 +4,9 @@ prometheus_image: prom/prometheus:v3.6.0
 grafana_image: grafana/grafana:12.1.1
 loki_image: grafana/loki:3.5.3
 caddy_image: caddy:2.10.2
+
+umami_base_url: "https://analytics.glefer.fr"
+
+umami_websites:
+  staging:
+    website_id: "e7ee081a-0a9e-4efc-ba92-ccbf550ea93a"

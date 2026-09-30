@@ -5,3 +5,7 @@
 
     reverse_proxy loki:3100
 }
+
+{{ analytics_hostname }} {
+    reverse_proxy umami:3000
+}

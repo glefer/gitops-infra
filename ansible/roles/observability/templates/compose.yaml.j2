@@ -74,10 +74,71 @@ services:
     networks:
       - observability
 
+
+  umami-db:
+    image: {{ postgres_image }}
+    container_name: umami-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: "{{ umami_db_name }}"
+      POSTGRES_USER: "{{ umami_db_user }}"
+      POSTGRES_PASSWORD_FILE: /run/secrets/db-password
+
+    volumes:
+      - type: volume
+        source: umami-db-data
+        target: /var/lib/postgresql/data
+
+      - type: bind
+        source: ./umami/secrets/db-password
+        target: /run/secrets/db-password
+        read_only: true
+        bind:
+          create_host_path: false
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U {{ umami_db_user }} -d {{ umami_db_name }}
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+    networks:
+      - observability
+
+  umami:
+    image: {{ umami_image }}
+    container_name: umami
+    restart: unless-stopped
+    init: true
+
+    environment:
+      DATABASE_URL: "postgresql://{{ umami_db_user }}:{{ umami_db_password | urlencode }}@umami-db:5432/{{ umami_db_name }}"
+      APP_SECRET: "{{ umami_app_secret }}"
+      TWO_FACTOR_ENCRYPTION_KEY: "{{ umami_two_factor_encryption_key }}"
+
+    depends_on:
+      umami-db:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -fsS http://localhost:3000/api/heartbeat || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+    networks:
+      - observability
+
 volumes:
   prometheus-data:
   grafana-data:
   loki-data:
+  umami-db-data:
   caddy-data:
   caddy-config:
 networks:

@@ -1,0 +1,80 @@
+---
+- name: Define Umami funnels
+  ansible.builtin.set_fact:
+    umami_funnels:
+      - name: Learning funnel
+        description: Learn content to completed exercise
+        parameters:
+          window: 60
+          steps:
+            - type: event
+              value: learn-open
+              filters: []
+            - type: event
+              value: exercise-start
+              filters: []
+            - type: event
+              value: exercise-complete
+              filters: []
+
+      - name: Exercise funnel
+        description: Exercise start to first answer to completion
+        parameters:
+          window: 60
+          steps:
+            - type: event
+              value: exercise-start
+              filters: []
+            - type: event
+              value: exercise-answer
+              filters: []
+            - type: event
+              value: exercise-complete
+              filters: []
+
+      - name: Challenge funnel
+        description: Challenge start to completion
+        parameters:
+          window: 60
+          steps:
+            - type: event
+              value: challenge-start
+              filters: []
+            - type: event
+              value: challenge-complete
+              filters: []
+
+- name: Get existing Umami funnels
+  ansible.builtin.uri:
+    url: "{{ umami_base_url }}/api/websites/{{ umami_websites.staging.website_id }}/funnels?pageSize=100"
+    method: GET
+    headers:
+      Accept: application/json
+      Authorization: "Bearer {{ umami_api_key }}"
+    return_content: true
+    status_code: 200
+  register: umami_existing_funnels
+  no_log: true
+
+- name: Create missing Umami funnels
+  ansible.builtin.uri:
+    url: "{{ umami_base_url }}/api/websites/{{ umami_websites.staging.website_id }}/funnels"
+    method: POST
+    headers:
+      Accept: application/json
+      Authorization: "Bearer {{ umami_api_key }}"
+    body_format: json
+    body:
+      name: "{{ item.name }}"
+      description: "{{ item.description }}"
+      parameters: "{{ item.parameters }}"
+    status_code:
+      - 200
+      - 201
+  loop: "{{ umami_funnels }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: >
+    item.name not in
+    (umami_existing_funnels.json.data | map(attribute='name') | list)
+  no_log: true

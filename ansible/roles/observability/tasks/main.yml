@@ -17,6 +17,8 @@
     - "{{ observability_root }}/caddy"
     - "{{ observability_root }}/grafana/provisioning/dashboards"
     - "{{ observability_root }}/grafana/dashboards"
+    - "{{ observability_root }}/umami"
+    - "{{ observability_root }}/umami/secrets"
 
 - name: Inspect kube-state-metrics password path
   ansible.builtin.stat:
@@ -127,6 +129,28 @@
     mode: "0644"
   notify: Restart Grafana
 
+- name: Inspect Umami database password path
+  ansible.builtin.stat:
+    path: "{{ observability_root }}/umami/secrets/db-password"
+  register: umami_db_password_path
+
+- name: Remove invalid Umami database password directory
+  ansible.builtin.file:
+    path: "{{ observability_root }}/umami/secrets/db-password"
+    state: absent
+  when:
+    - umami_db_password_path.stat.exists
+    - umami_db_password_path.stat.isdir
+
+- name: Render Umami database password
+  ansible.builtin.template:
+    src: umami-db-password.j2
+    dest: "{{ observability_root }}/umami/secrets/db-password"
+    owner: root
+    group: root
+    mode: "0400"
+  no_log: true
+
 - name: Render Docker Compose
   ansible.builtin.template:
     src: compose.yaml.j2
@@ -140,3 +164,6 @@
     project_src: "{{ observability_root }}"
     state: present
     pull: missing
+
+- name: Provision Umami analytics
+  ansible.builtin.import_tasks: umami-analytics.yml
