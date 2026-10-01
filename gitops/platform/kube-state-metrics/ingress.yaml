@@ -5,6 +5,8 @@ metadata:
   namespace: kube-system
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-production
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
     traefik.ingress.kubernetes.io/router.middlewares: kube-system-kube-state-metrics-basic-auth@kubernetescrd
 spec:
   ingressClassName: traefik

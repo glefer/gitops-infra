@@ -24,12 +24,25 @@ spec:
         observability.cachelab.fr/environment: staging
 
     spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+
       imagePullSecrets:
         - name: ghcr-pull-secret
 
       containers:
         - name: frontend
-          image: ghcr.io/glefer/cachelab-frontend@sha256:f5168b317e8d0e7a38152c236c1749559bda0898b150131cb7f663557e374c44
+          image: ghcr.io/glefer/cachelab-frontend@sha256:c66e3cf40b9c5edc0dbd3d8fe5de8d627a390982e94eca76f575d02bfb6f533a
+
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 101
+            runAsGroup: 101
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
 
           ports:
             - name: http

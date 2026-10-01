@@ -1,0 +1,35 @@
+---
+- name: Get existing Umami funnels for {{ umami_website.key }}
+  ansible.builtin.uri:
+    url: "{{ umami_base_url }}/api/websites/{{ umami_website.value.website_id }}/funnels?pageSize=100"
+    method: GET
+    headers:
+      Accept: application/json
+      Authorization: "Bearer {{ umami_api_key }}"
+    return_content: true
+    status_code: 200
+  register: umami_existing_funnels
+  no_log: true
+
+- name: Create missing Umami funnels for {{ umami_website.key }}
+  ansible.builtin.uri:
+    url: "{{ umami_base_url }}/api/websites/{{ umami_website.value.website_id }}/funnels"
+    method: POST
+    headers:
+      Accept: application/json
+      Authorization: "Bearer {{ umami_api_key }}"
+    body_format: json
+    body:
+      name: "{{ item.name }}"
+      description: "{{ item.description }}"
+      parameters: "{{ item.parameters }}"
+    status_code:
+      - 200
+      - 201
+  loop: "{{ umami_funnels }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: >
+    item.name not in
+    (umami_existing_funnels.json.data | default([]) | map(attribute='name') | list)
+  no_log: true

@@ -29,10 +29,32 @@ spec:
             expose:
               default: true
 
+        providers:
+          kubernetesIngress:
+            ingressClass: traefik
+
+          kubernetesCRD:
+            allowCrossNamespace: false
+            allowExternalNameServices: false
+            allowEmptyServices: false
+            defaultTLSResourcesNamespace: traefik
+
         additionalArguments:
+          - --entryPoints.web.allowACMEByPass=true
+          
+          # Global HTTP -> HTTPS redirection.
           - --entryPoints.web.http.redirections.entryPoint.to=:443
           - --entryPoints.web.http.redirections.entryPoint.scheme=https
           - --entryPoints.web.http.redirections.entryPoint.permanent=true
+
+          # Fail closed on conflicting TLS options.
+          - --core.strictTLSOptions=true
+
+          # Explicitly refuse trusting arbitrary forwarded headers.
+          - --entryPoints.web.forwardedHeaders.insecure=false
+          - --entryPoints.websecure.forwardedHeaders.insecure=false
+
+          # Access logs.
           - --accesslog=true
           - --accesslog.format=json
           - --accesslog.fields.headers.defaultmode=drop

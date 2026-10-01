@@ -10,3 +10,5 @@ umami_base_url: "https://analytics.glefer.fr"
 umami_websites:
   staging:
     website_id: "e7ee081a-0a9e-4efc-ba92-ccbf550ea93a"
+  prod:
+    website_id: "b6efa21a-3c31-4a6d-ba98-54416f23a6a6"

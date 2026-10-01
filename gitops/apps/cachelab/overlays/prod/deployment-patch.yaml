@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cachelab
+spec:
+  template:
+    metadata:
+      labels:
+        observability.cachelab.fr/environment: production
+    spec:
+      containers:
+        - name: frontend
+          env:
+            - name: UMAMI_WEBSITE_ID
+              value: "b6efa21a-3c31-4a6d-ba98-54416f23a6a6"

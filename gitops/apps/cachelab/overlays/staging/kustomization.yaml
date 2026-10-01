@@ -8,6 +8,7 @@ resources:
   - ingress.yaml
   - middleware-auth.yaml
   - middleware-noindex.yaml
+  - middleware-security.yaml
 
 generators:
   - secret-generator.yaml

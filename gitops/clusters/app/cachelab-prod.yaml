@@ -1,22 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: cachelab-staging
+  name: cachelab-prod
   namespace: argocd
 spec:
   project: default
-
   source:
     repoURL: https://github.com/glefer/gitops-infra.git
     targetRevision: main
-    path: gitops/apps/cachelab/overlays/staging
+    path: gitops/apps/cachelab/overlays/prod
     plugin:
       name: ksops-v1
-
   destination:
     server: https://kubernetes.default.svc
-    namespace: cachelab-staging
-
+    namespace: cachelab-prod
   syncPolicy:
     automated:
       prune: true

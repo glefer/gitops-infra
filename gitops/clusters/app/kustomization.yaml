@@ -3,9 +3,11 @@ kind: Kustomization
 
 resources:
   - traefik.yaml
+  - traefik-config.yaml
   - cert-manager.yaml
   - cert-manager-config.yaml
   - cachelab-staging.yaml
+  - cachelab-prod.yaml
   - kube-state-metrics.yaml
   - kube-state-metrics-config.yaml
   - alloy.yaml
