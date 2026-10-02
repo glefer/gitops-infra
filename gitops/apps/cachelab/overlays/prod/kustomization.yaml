@@ -4,17 +4,8 @@ namespace: cachelab-prod
 resources:
   - ../../base
   - ingress.yaml
-  - middleware-auth.yaml
   - middleware-security.yaml
 generators:
   - secret-generator.yaml
 patches:
   - path: deployment-patch.yaml
-  - target:
-      version: v1
-      kind: Secret
-      name: staging-basic-auth
-    patch: |-
-      - op: replace
-        path: /metadata/name
-        value: prod-basic-auth

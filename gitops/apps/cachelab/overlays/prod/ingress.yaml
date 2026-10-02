@@ -7,7 +7,6 @@ metadata:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
     traefik.ingress.kubernetes.io/router.middlewares: >-
-      cachelab-prod-prod-basic-auth@kubernetescrd,
       cachelab-prod-prod-security@kubernetescrd
 spec:
   ingressClassName: traefik
