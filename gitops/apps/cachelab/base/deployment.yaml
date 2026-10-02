@@ -33,7 +33,7 @@ spec:
 
       containers:
         - name: frontend
-          image: ghcr.io/glefer/cachelab-frontend@sha256:c66e3cf40b9c5edc0dbd3d8fe5de8d627a390982e94eca76f575d02bfb6f533a
+          image: ghcr.io/glefer/cachelab-frontend@sha256:d0eba1d0ec99c187f12a9305db18f690db212e0909bcde651ecba3f0bcbec9b3
 
           securityContext:
             runAsNonRoot: true
